@@ -1,0 +1,239 @@
+API in Android 
+
+AndroidManifest.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+   package="com.example.demoapi">
+
+   <uses-permission android:name="android.permission.INTERNET"/>
+
+
+   <application
+       android:allowBackup="true"
+       android:icon="@mipmap/ic_launcher"
+       android:label="@string/app_name"
+       android:roundIcon="@mipmap/ic_launcher_round"
+       android:supportsRtl="true"
+       android:theme="@style/AppTheme">
+       <activity android:name=".MainActivity">
+           <intent-filter>
+               <action android:name="android.intent.action.MAIN" />
+
+               <category android:name="android.intent.category.LAUNCHER" />
+           </intent-filter>
+       </activity>
+   </application>
+
+</manifest>
+
+
+
+
+
+
+
+
+
+activity_main.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   xmlns:app="http://schemas.android.com/apk/res-auto"
+   xmlns:tools="http://schemas.android.com/tools"
+   android:layout_width="match_parent"
+  android:orientation="vertical"
+   android:layout_height="match_parent"
+   tools:context=".MainActivity">
+
+
+   <ListView
+       android:id="@+id/listview"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"/>
+
+   <ProgressBar
+       android:id="@+id/progressbar"
+       android:visibility="gone"
+       android:layout_gravity="center"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       />
+
+</LinearLayout>
+
+Custom_layout_listview.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   android:layout_width="match_parent"
+   android:layout_height="match_parent"
+   android:orientation="vertical">
+
+   <TextView
+       android:id="@+id/name"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_margin="16dp" />
+
+   <TextView
+       android:id="@+id/imageurl"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_margin="16dp" />
+
+
+</LinearLayout>
+
+Hero.java
+
+package com.example.demoapi;
+// Data model class
+public class Hero {
+String name,imageURL;
+
+   public Hero(String name, String imageURL) {
+       this.name = name;
+       this.imageURL = imageURL;
+   }
+
+   public String getName() {
+       return name;
+   }
+
+   public String getImageURL() {
+       return imageURL;
+   }
+}
+
+ListViewAdapter.java
+
+package com.example.demoapi;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import java.util.List;
+
+public class ListViewAdapter extends ArrayAdapter<Hero> {
+   List<Hero> heroList;
+   Context context;
+
+   public ListViewAdapter(List<Hero> heroList, Context context) {
+       super(context,R.layout.custom_layout_listview,heroList);
+       this.heroList = heroList;
+       this.context = context;
+   }
+
+   @NonNull
+   @Override
+   public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+       LayoutInflater inflater =LayoutInflater.from(context);
+       View listviewitem = inflater.inflate(R.layout.custom_layout_listview,null,true);
+       TextView name = listviewitem.findViewById(R.id.name);
+       TextView imageurl = listviewitem.findViewById(R.id.imageurl);
+       Hero hero = heroList.get(position);
+       name.setText(hero.getName());
+       imageurl.setText(hero.getImageURL());
+       return listviewitem;
+   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MainActivity.java
+
+package com.example.demoapi;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+
+   private  static final String url= "https://simplifiedcoding.net/demos/view-flipper/heroes.php";
+   ListView listView;
+   ArrayList<Hero> heroArrayList;
+
+   @Override
+   protected void onCreate(Bundle savedInstanceState) {
+       super.onCreate(savedInstanceState);
+       setContentView(R.layout.activity_main);
+       listView =findViewById(R.id.listview);
+       heroArrayList = new ArrayList<>();
+       loadheroList();
+   }
+   public void loadheroList(){
+       final ProgressBar progressBar = findViewById(R.id.progressbar);
+       progressBar.setVisibility(View.VISIBLE);
+       StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+           @Override
+           public void onResponse(String response) {
+           progressBar.setVisibility(View.INVISIBLE);
+               try {
+                   JSONObject jsonObject = new JSONObject(response);
+                   JSONArray jsonArray = jsonObject.getJSONArray("heroes");
+                   for(int i=0;i<jsonArray.length();i++){
+                       JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                       Hero hero =new Hero(jsonObject1.getString("name"),jsonObject1.getString("imageurl"));
+                       heroArrayList.add(hero);
+                       ListViewAdapter adapter = new ListViewAdapter(heroArrayList,getApplicationContext());
+                       listView.setAdapter(adapter);
+                   }
+               } catch (JSONException e) {
+                   e.printStackTrace();
+               }
+           }
+       }, new Response.ErrorListener() {
+           @Override
+           public void onErrorResponse(VolleyError error) {
+Toast.makeText(getApplicationContext(),"There is an error",Toast.LENGTH_LONG).show();
+           }
+       });
+    RequestQueue requestQueue = Volley.newRequestQueue(this);
+    requestQueue.add(stringRequest);
+   }
+
+
+   }
+
